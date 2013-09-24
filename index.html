@@ -3,7 +3,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us">
 <head>
 
-<!-- Application title -->
 <title>Shortlist</title>
 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
@@ -15,6 +14,7 @@
     <link rel="stylesheet" href="//www.arcgis.com/home/js/esri/css/esri.css"-->
     <!-- OR use these link tags for Portal for ArcGIS: -->
 
+
 <link rel="stylesheet" type="text/css" href="/arcgis/home/js/esri/css/esri.css" />
 <link rel="stylesheet" type="text/css" href="/arcgis/home/js/dojo/dijit/themes/claro/claro.css">
 <link rel="stylesheet" type="text/css" href="colorbox/colorbox.css">
@@ -25,7 +25,8 @@
     <!--script src="//www.arcgis.com/home/js/dojo/dojo/dojo.js"></script>
     <script src="//www.arcgis.com/home/js/esri/jsapi.js"></script-->
     <!-- OR use this script tag for Portal for ArcGIS: -->
-	
+
+
 <script type="text/javascript" src="lib/jquery-1.7.2.min.js"></script>
 <script type="text/javascript" src="lib/common/helper_functions.js"></script>
 <script type="text/javascript">var djConfig = {parseOnLoad: true};</script>
@@ -33,8 +34,6 @@
 <script type="text/javascript" src="colorbox/jquery.colorbox-min.js"></script>
 <script type="text/javascript" src="lib/jquery.animate-colors-min.js"></script>
 <script type="text/javascript">
-
-<!-- Container for all application elements -->
 
 dojo.require("dijit.dijit");
 dojo.require("dijit.layout.BorderContainer");
@@ -65,18 +64,10 @@ var COLOR_SCHEMES = [
 					
 var COLOR_DIM = "#E7E7E7";
 var COLOR_FULL = "#FFFFFF";
-
-
-var _lutIconSpecs = {
-	tiny:new IconSpecs(22,28,3,8),
-	medium:new IconSpecs(24,30,3,8),
-	large:new IconSpecs(32,40,3,11)
-	}
-
+	
 var _contentLayers = [];
 
 var _isMobile = isMobile();
-var _isIE = (navigator.appVersion.indexOf("MSIE") > -1);
 
 var _map;
 
