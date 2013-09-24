@@ -3,46 +3,22 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-us">
 <head>
 
-<title>Shortlist</title>
+<title>CCIR</title>
 
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=7, IE=9">
 
-<link rel="stylesheet" type="text/css" href="http://serverapi.arcgisonline.com/jsapi/arcgis/3.2/js/esri/css/esri.css" />
-<link rel="stylesheet" type="text/css" href="http://serverapi.arcgisonline.com/jsapi/arcgis/3.2/js/dojo/dijit/themes/claro/claro.css">
+<link rel="stylesheet" type="text/css" href="/arcgis/home/js/esri/css/esri.css" />
+<link rel="stylesheet" type="text/css" href="/arcgis/home/js/dojo/dijit/themes/claro/claro.css">
 <link rel="stylesheet" type="text/css" href="colorbox/colorbox.css">
 <link rel="stylesheet" type="text/css" href="css/style.css">
 
 <script type="text/javascript" src="lib/jquery-1.7.2.min.js"></script>
-<script type="text/javascript" src="lib/IconSpecs.js"></script>
 <script type="text/javascript" src="lib/common/helper_functions.js"></script>
 <script type="text/javascript">var djConfig = {parseOnLoad: true};</script>
-<script type="text/javascript" src="http://serverapi.arcgisonline.com/jsapi/arcgis/?v=3.2"></script>
+<script type="text/javascript" src= "/arcgis/jsapi/jsapi"></script>
 <script type="text/javascript" src="colorbox/jquery.colorbox-min.js"></script>
 <script type="text/javascript" src="lib/jquery.animate-colors-min.js"></script>
-
-<!--Social Media Links-->
-<script type="text/javascript">var switchTo5x=true;</script>
-<script type="text/javascript" src="http://w.sharethis.com/button/buttons.js"></script>
-<script type="text/javascript">stLight.options({publisher:'77225c91-2742-42f7-b1b4-bddda99a9bde'});</script>
-<!--END Social Media Links-->
-
-<!--Google Analytics Start-->
-<script type="text/javascript">
-  if (window.location.href.toLowerCase().indexOf("storymaps.esri.com") >= 0) {
-	  var _gaq = _gaq || [];
-	  _gaq.push(['_setAccount', 'UA-26529417-1']);
-	  _gaq.push(['_trackPageview']);
-	
-	  (function() {
-		 var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
-		   ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-		   var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-	  })();
-  }
-</script>
-<!--Google Analytics End-->
-
 <script type="text/javascript">
 
 dojo.require("dijit.dijit");
@@ -55,9 +31,10 @@ dojo.require("esri.arcgis.utils");
 ********************  config section ******************
 *******************************************************/
 
-var	WEBMAP_ID = "1966ef409a344d089b001df85332608f";
-var	BOOKMARKS_ALIAS = "Zoom";
-var COLOR_ORDER = "green,red,blue,purple"; // will only use as many colors as you have content (point) layers
+var SHARINGURL = "https://afmcomstaging.esri.com/arcgis/sharing/content/items";
+var	WEBMAP_ID = "9ae5e1a33da4459b829a2eb3fa51364a";
+var	BOOKMARKS_ALIAS = "Locations";
+var COLOR_ORDER = "blue,red,green"; // will only use as many colors as you have content (point) layers
 var BINGMAPS_KEY = "";
 					
 /******************************************************
@@ -73,17 +50,10 @@ var COLOR_SCHEMES = [
 					
 var COLOR_DIM = "#E7E7E7";
 var COLOR_FULL = "#FFFFFF";
-
-var _lutIconSpecs = {
-	tiny:new IconSpecs(22,28,3,8),
-	medium:new IconSpecs(24,30,3,8),
-	large:new IconSpecs(32,40,3,11)
-}
 	
 var _contentLayers = [];
 
 var _isMobile = isMobile();
-var _isIE = (navigator.appVersion.indexOf("MSIE") > -1);
 
 var _map;
 
@@ -112,6 +82,8 @@ function init() {
 	
 	if (!_jqueryReady) return;
 	if (!_dojoReady) return;
+
+	esri.arcgis.utils.arcgisUrl = SHARINGURL;
 	
 	if (getParameterByName("webmap") != "") {
 		WEBMAP_ID = getParameterByName("webmap");
@@ -229,7 +201,7 @@ function initMap(layers) {
 	
 	var supportLayer;
 	$.each(supportLayers,function(index,value) {
-		supportLayer = _map.getLayer($.grep(_map.graphicsLayerIds, function(n,i){return _map.getLayer(n).id == value.featureCollection.layers[0].id})[0]);
+		supportLayer = findLayer(_map,value.title);
 		if (supportLayer == null) return;
 		$.each(supportLayer.graphics,function(index,value) {
 			value.attributes.getValueCI = getValueCI; // assign extra method to handle case sensitivity
@@ -255,7 +227,7 @@ function initMap(layers) {
 	
 	var contentLayer;
 	$.each(pointLayers,function(index,value) {
-		_map.removeLayer(_map.getLayer($.grep(_map.graphicsLayerIds, function(n,i){return _map.getLayer(n).id == value.featureCollection.layers[0].id})[0]));
+		_map.removeLayer(findLayer(_map,value.title));
 		if (index <= 3) {  // maximum of 4 point layers.
 			$.each(value.featureCollection.layers[0].featureSet.features,function(index,value) {
 				value.attributes.getValueCI = getValueCI; // assign extra method to handle case sensitivity
@@ -311,8 +283,14 @@ function tile_onMouseOut(e) {
 }
 
 function tile_onClick(e) {
-	var id = $(this).attr("id").substring(4);	
-	preSelection();
+	// turn off the last selected tile...
+	
+	if (_selected != null) {
+		var tile = $.grep($("ul.tilelist li"),function(n,i){return n.id == "item"+_selected.attributes.getValueCI("Number")})[0];
+		if ($(tile).attr("id") != $(this).attr("id")) $(tile).stop().animate({'background-color' : COLOR_DIM});
+	}	
+	$(this).stop().animate({'background-color' : COLOR_FULL});
+	var id= $(this).attr("id").substring(4);
 	_selected = $.grep(_layerCurrent.graphics,function(n,i){return n.attributes.getValueCI("Number") == id})[0];
 	postSelection();
 }
@@ -351,8 +329,14 @@ function baselayer_onClick(event) {
 
 function layer_onClick(event)
 {
-	preSelection();		
+	var tile;
+	if (_selected != null) {
+		tile = $.grep($("ul.tilelist li"),function(n,i){return n.id == "item"+_selected.attributes.getValueCI("Number")})[0]
+		$(tile).stop().animate({'background-color' : COLOR_DIM});
+	}	
 	_selected = event.graphic;
+	tile = $.grep($("ul.tilelist li"),function(n,i){return n.id == "item"+_selected.attributes.getValueCI("Number")})[0]
+	$(tile).stop().animate({'background-color' : COLOR_FULL});
 	postSelection();
 }
 
@@ -362,8 +346,7 @@ function layer_onMouseOver(event)
 	_map.setMapCursor("pointer");
 	var graphic = event.graphic;
 	if (graphic == _selected) return;
-	graphic.setSymbol(resizePictureMarkerSymbol(graphic.symbol, _lutIconSpecs["medium"]));
-	if (!_isIE) moveGraphicToFront(graphic);	
+	graphic.setSymbol(graphic.symbol.setHeight(30).setWidth(24));
 	$("#hoverInfo").html(graphic.attributes.getValueCI("Title"));
 	var pt = _map.toScreen(graphic.geometry);
 	hoverInfoPos(pt.x,pt.y);
@@ -374,8 +357,7 @@ function layer_onMouseOut(event)
 	if (_isMobile) return;	
 	_map.setMapCursor("default");
 	var graphic = event.graphic;	
-	if (graphic != _selected)
-		graphic.setSymbol(resizePictureMarkerSymbol(graphic.symbol, _lutIconSpecs["tiny"]));
+	graphic.setSymbol(graphic.symbol.setHeight(28).setWidth(22));
 	$("#hoverInfo").hide();
 }
 
@@ -385,7 +367,10 @@ function layer_onMouseOut(event)
 *******************************************************/
 
 function unselect() {
-	preSelection();		
+	if (_selected != null) {
+		tile = $.grep($("ul.tilelist li"),function(n,i){return n.id == "item"+_selected.attributes.getValueCI("Number")})[0]
+		$(tile).stop().animate({'background-color' : COLOR_DIM});
+	}	
 	_selected = null;
 	postSelection();
 }
@@ -412,7 +397,6 @@ function loadBookmarks() {
 }
 
 function activateLayer(layer) {
-	preSelection();	
 	_selected = null;
 	postSelection();
 	_layerCurrent = layer;
@@ -478,10 +462,9 @@ function buildLayer(arr,iconDir,root) {
 	var layer = new esri.layers.GraphicsLayer();
 	var pt;
 	var sym;
-	var spec = _lutIconSpecs["tiny"];
 	$.each(arr,function(index,value){
 		pt = new esri.geometry.Point(value.geometry.x,value.geometry.y,value.geometry.spatialReference);
-		sym = createPictureMarkerSymbol("images/icons/"+iconDir+"/"+root+value.attributes.getValueCI("Number")+".png", _lutIconSpecs["tiny"]);
+		sym = new esri.symbol.PictureMarkerSymbol("images/icons/"+iconDir+"/"+root+value.attributes.getValueCI("Number")+".png",22,28);
 		layer.add(new esri.Graphic(pt,sym,value.attributes));
 	});
 	return layer;
@@ -505,59 +488,25 @@ function handleWindowResize() {
 	$("#mainWindow").height(heightDoc - ($("#header").height()));
 	dijit.byId("mainWindow").layout();
 	$("#paneLeft").height($("#mainWindow").height() - 35);
-	$(".tilelist").height($("#paneLeft").height() - 18);
+	$(".tilelist").height($("#paneLeft").height() - 20);
 	$("#map").height($("#mainWindow").height() - 35);
 	
 	adjustPopup();
 
 }
 
-function preSelection() 
-{
-	// return the soon-to-be formerly selected graphic icon to normal
-	// size & dim the corresponding tile.
-	
-	if (_selected) {
-		_selected.setSymbol(resizePictureMarkerSymbol(_selected.symbol, _lutIconSpecs["tiny"]));
-		var tile = $.grep($("ul.tilelist li"),function(n,i){return n.id == "item"+_selected.attributes.getValueCI("Number")})[0];
-		if ($(tile).attr("id") != $(this).attr("id")) $(tile).stop().animate({'background-color' : COLOR_DIM});
-	}
-		
-}
 
 function postSelection() {
 	
 	if (_selected == null) {
 		_map.infoWindow.hide();
 	} else {
-		
-		// make the selected location's icon LARGE
-		_selected.setSymbol(resizePictureMarkerSymbol(_selected.symbol, _lutIconSpecs["large"]));
-		
-		// calling moveToFront directly after messing
-		// with the symbol causes problems, so I
-		// put it on a delay and put it in a try/catch
-		// just to be safe...
-		setTimeout(function(){
-			try {
-				_selected.getDojoShape().moveToFront();
-			} catch (err) {
-				console.log("problem with 'moveToFront()'...");
-			}
-		},10);				
-		
 		_map.infoWindow.setTitle(_selected.attributes.getValueCI("Title"));
 		_map.infoWindow.setContent(_selected.attributes.getValueCI("Short_desc")+"<p><span class='infoWindowLink'>Details >></span></p>");
 		_map.infoWindow.show(_selected.geometry);	
 		$(".infoWindowLink").click(function(e) {
 			showDetails(_selected);
 		});		
-		
-		// light up the corresponding tile.
-
-		var tile = $.grep($("ul.tilelist li"),function(n,i){return n.id == "item"+_selected.attributes.getValueCI("Number")})[0]
-		$(tile).stop().animate({'background-color' : COLOR_FULL});
-
 	}
 
 	$("#hoverInfo").hide();
@@ -704,29 +653,6 @@ function getSortedColorSchemes() {
 		
 }
 
-function moveGraphicToFront(graphic)
-{
-	var dojoShape = graphic.getDojoShape();
-	if (dojoShape) dojoShape.moveToFront();
-}
-
-function createPictureMarkerSymbol(url, spec)
-{
-	return new esri.symbol.PictureMarkerSymbol(
-			url,
-			spec.getWidth(),
-			spec.getHeight()
-		).setOffset(
-			spec.getOffsetX(),
-			spec.getOffsetY()
-		);
-}
-
-function resizePictureMarkerSymbol(sym, spec)
-{
-	return sym.setHeight(spec.getHeight()).setWidth(spec.getWidth()).setOffset(spec.getOffsetX(),spec.getOffsetY());
-}
-
 
 </script>
 
@@ -741,9 +667,9 @@ function resizePictureMarkerSymbol(sym, spec)
 	    <h2 id="subtitle"></h2>
       </div>
       <div id="logoArea">
-        <div id="social"><a id="msLink" href="http://storymaps.esri.com" target="_blank">A story map </a><span  class='st_facebook' ></span><span  class='st_twitter' ></span>
+        <div id="social"><a id="msLink"  target="_blank">A Story Map</a><span  class='st_facebook' ></span><span  class='st_twitter' ></span>
         </div>
-        <div id="logo"><a id="logoLink" href="http://www.esri.com" target="_blank"><img id="logoImg" src="images/Logo.png" alt="Esri - Home"></a></div>
+        <div id="logo"><a id="logoLink"  target="_blank"><img id="logoImg" src="images/Logo.png" alt="Esri - Home"></a></div>
       </div>
     </div>
     
